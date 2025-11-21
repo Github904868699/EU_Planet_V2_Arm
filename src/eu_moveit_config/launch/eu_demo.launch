@@ -1,0 +1,57 @@
+<launch>
+  <!-- specify the planning pipeline -->
+  <arg default="ompl" name="pipeline"/>
+  <!-- By default, we do not start a database (it can be large) -->
+  <arg default="false" name="db"/>
+  <!-- Allow user to specify database location -->
+  <arg default="$(find eu_moveit_config)/default_warehouse_mongo_db" name="db_path"/>
+  <!-- By default, we are not in debug mode -->
+  <arg default="false" name="debug"/>
+  <!-- By default, we will load or override the robot_description -->
+  <arg default="true" name="load_robot_description"/>
+  <!-- Set execution mode for fake execution controllers -->
+  <arg default="interpolate" name="fake_execution_type"/>
+  <!--
+  By default, hide joint_state_publisher's GUI
+
+  MoveIt!'s "demo" mode replaces the real robot driver with the joint_state_publisher.
+  The latter one maintains and publishes the current joint configuration of the simulated robot.
+  It also provides a GUI to move the simulated robot around "manually".
+  This corresponds to moving around the real robot without the use of MoveIt.
+  -->
+  <arg default="false" name="use_gui"/>
+  <arg default="false" name="use_rviz"/>
+  <!-- If needed, broadcast static tf for robot root -->
+  <!-- We do not have a robot connected, so publish fake joint states -->
+  <node pkg="joint_state_publisher" unless="$(arg use_gui)" type="joint_state_publisher" name="joint_state_publisher">
+    <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
+  </node>
+  <node if="$(arg use_gui)" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher">
+    <rosparam param="source_list">[move_group/fake_controller_joint_states]</rosparam>
+  </node>
+  <node pkg="eu_driver_planet" required="true" respawn_delay="0" type="eu_driver_planet" name="eu_driver_planet">
+  </node>
+  <node pkg="eu_ui" type="eu_ui" required="true" respawn_delay="0" name="eu_ui" output="log">
+  </node>
+  <!-- Given the published joint states, publish tf for the robot links -->
+  <node pkg="robot_state_publisher" respawn="true" output="screen" type="robot_state_publisher" name="robot_state_publisher"/>
+  <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers configured by default) -->
+  <include file="$(find eu_moveit_config)/launch/move_group.launch">
+    <arg value="true" name="allow_trajectory_execution"/>
+    <arg value="false" name="fake_execution"/>
+    <arg value="$(arg fake_execution_type)" name="fake_execution_type"/>
+    <arg value="true" name="info"/>
+    <arg value="$(arg debug)" name="debug"/>
+    <arg value="$(arg pipeline)" name="pipeline"/>
+    <arg value="$(arg load_robot_description)" name="load_robot_description"/>
+  </include>
+  <!-- Run Rviz and load the default config to see the state of the move_group node -->
+  <include if="$(arg use_rviz)" file="$(find eu_moveit_config)/launch/moveit_rviz.launch">
+    <arg value="$(find eu_moveit_config)/launch/moveit.rviz" name="rviz_config"/>
+    <arg value="$(arg debug)" name="debug"/>
+  </include>
+  <!-- If database loading was enabled, start mongodb as well -->
+  <include if="$(arg db)" file="$(find eu_i5_moveit_config)/launch/default_warehouse_db.launch">
+    <arg value="$(arg db_path)" name="moveit_warehouse_database_path"/>
+  </include>
+</launch>
