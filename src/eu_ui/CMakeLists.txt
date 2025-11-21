@@ -30,4 +30,3 @@ catkin_package(
 )
 
 add_subdirectory(eu_control)
-add_subdirectory(eu_ui)
