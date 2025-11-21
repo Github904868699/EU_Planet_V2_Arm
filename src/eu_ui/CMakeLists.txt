@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
     moveit_msgs
     moveit_ros_perception
     moveit_ros_planning_interface
-    moveit_visual_tools
     )
 find_package(Qt5 REQUIRED Core Widgets Xml Sql PrintSupport SerialPort)
 set(QT_LIBRARIES Qt5::Widgets Qt5::Xml Qt5::Sql Qt5::PrintSupport Qt5::SerialPort)
